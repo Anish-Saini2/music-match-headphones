@@ -19,7 +19,6 @@ class MusicMatchApp:
         self.root.title("Music Match Headphones - Milestone")
         self.root.geometry("800x600")
 
-        # Load data
         self.songs = []
         self.headphones = []
         self.load_data()
@@ -34,13 +33,11 @@ class MusicMatchApp:
             print("Loading spotify_songs.csv...")
             songs_df = pd.read_csv('data/spotify_songs.csv')
 
-            # Strip whitespace from column names (fixes the leading spaces issue)
             songs_df.columns = songs_df.columns.str.strip()
 
             print(f"Available columns: {songs_df.columns.tolist()}")
             print(f"Total rows in CSV: {len(songs_df)}")
 
-            # Check if required columns exist
             required_columns = ['track_id', 'track_name', 'track_artist',
                                 'track_popularity', 'playlist_genre', 'playlist_subgenre',
                                 'danceability', 'energy', 'valence', 'tempo',
@@ -63,12 +60,11 @@ class MusicMatchApp:
                 print(f"  {genre}: {count} songs")
 
             # Sample songs evenly from each genre
-            songs_per_genre = 300  # Adjust this number based on your needs
+            songs_per_genre = 300
             sampled_songs = []
 
             for genre in unique_genres:
                 genre_songs = songs_df[songs_df['playlist_genre'] == genre]
-                # Sample randomly from each genre (or take all if less than songs_per_genre)
                 sample_size = min(songs_per_genre, len(genre_songs))
                 sampled_genre_songs = genre_songs.sample(n=sample_size, random_state=42)
                 sampled_songs.append(sampled_genre_songs)
@@ -77,7 +73,6 @@ class MusicMatchApp:
             songs_df_sampled = pd.concat(sampled_songs, ignore_index=True)
             print(f"Sampled {len(songs_df_sampled)} songs total")
 
-            # Load each song into Song objects
             for _, row in songs_df_sampled.iterrows():
                 try:
                     song = Song(
@@ -111,7 +106,6 @@ class MusicMatchApp:
             print("\nLoading headphones.csv...")
             headphones_df = pd.read_csv('data/headphones.csv')
 
-            # Strip whitespace from column names
             headphones_df.columns = headphones_df.columns.str.strip()
 
             for _, row in headphones_df.iterrows():
@@ -153,22 +147,18 @@ class MusicMatchApp:
 
     def create_gui(self):
         """Create the GUI elements"""
-        # Title
         title_label = tk.Label(self.root, text="Music Match Headphones",
                                font=("Arial", 20, "bold"))
         title_label.pack(pady=20)
 
-        # Instructions
         instructions = tk.Label(self.root,
                                 text="Select your music preferences to get headphone recommendations",
                                 font=("Arial", 12))
         instructions.pack(pady=10)
 
-        # Frame for controls
         control_frame = tk.Frame(self.root)
         control_frame.pack(pady=20)
 
-        # Genre selection (Interactive Element 1)
         tk.Label(control_frame, text="Favorite Genre:", font=("Arial", 11)).grid(
             row=0, column=0, padx=10, pady=10, sticky="w")
         self.genre_var = tk.StringVar()
@@ -179,7 +169,6 @@ class MusicMatchApp:
         if genres:
             self.genre_combo.current(0)
 
-        # Use case selection (Interactive Element 2)
         tk.Label(control_frame, text="Use Case:", font=("Arial", 11)).grid(
             row=1, column=0, padx=10, pady=10, sticky="w")
         self.use_case_var = tk.StringVar(value="Casual")
@@ -189,7 +178,6 @@ class MusicMatchApp:
                                 value=case, font=("Arial", 10))
             rb.grid(row=1, column=i + 1, padx=5, pady=10)
 
-        # Get Recommendations button (Interactive Element 3)
         recommend_btn = tk.Button(self.root, text="Get Recommendations",
                                   command=self.get_recommendations,
                                   font=("Arial", 12), bg="#4CAF50", fg="white",
@@ -203,7 +191,6 @@ class MusicMatchApp:
         tk.Label(results_frame, text="Recommendations:",
                  font=("Arial", 12, "bold")).pack(anchor="w")
 
-        # Text widget with scrollbar (Interactive Element 4 - scrollbar)
         self.results_text = tk.Text(results_frame, height=10, width=70,
                                     font=("Arial", 10), wrap="word")
         scrollbar = tk.Scrollbar(results_frame, command=self.results_text.yview)
@@ -212,7 +199,6 @@ class MusicMatchApp:
         self.results_text.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # View All Data button (Interactive Element 5)
         view_data_btn = tk.Button(self.root, text="View All Songs",
                                   command=self.view_all_songs,
                                   font=("Arial", 11), bg="#2196F3", fg="white",
@@ -231,7 +217,6 @@ class MusicMatchApp:
         # Filter songs by genre
         genre_songs = [song for song in self.songs if song.playlist_genre == genre]
 
-        # Calculate average energy for the genre
         if genre_songs:
             avg_energy = sum([song.energy for song in genre_songs]) / len(genre_songs)
         else:
@@ -241,7 +226,6 @@ class MusicMatchApp:
         matching_headphones = [hp for hp in self.headphones
                                if hp.matches_use_case(use_case)]
 
-        # Display results
         self.results_text.delete(1.0, tk.END)
         self.results_text.insert(tk.END,
                                  f"Based on your {genre} preference and {use_case} use case:\n\n")
@@ -268,7 +252,6 @@ class MusicMatchApp:
         songs_window.title("All Songs")
         songs_window.geometry("600x400")
 
-        # Create text widget with scrollbar
         text_frame = tk.Frame(songs_window)
         text_frame.pack(fill="both", expand=True, padx=10, pady=10)
 

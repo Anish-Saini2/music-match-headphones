@@ -21,11 +21,12 @@ Music Match Headphones analyzes a user's music taste (genre preferences, audio f
 - **Interactive GUI**: User-friendly graphical interface built with tkinter
 
 ### Planned Features 
-- Advanced recommendation algorithm using machine learning
+- Advanced recommendation algorithm (Tree Model).
+- Improving Model accuracy.
 - User profile creation and preference saving
-- Audio feature visualization
 - Price range filtering
 - Detailed headphone comparisons
+- GUI Improvements
 
 ---
 
@@ -184,10 +185,10 @@ music-match-headphones/
 -/data
     - spotify_songs.csv    # Song dataset
     - headphones.csv       # Headphone dataset
-- main.py              # Main application and GUI
-- song.py              # Song class definition
-- headphone.py         # Headphone class definition
-- test_song.py         # Unit tests
-- requirements.txt     # Python dependencies
-- README.md            # This file
+- main.py                  # Main application and GUI
+- song.py                  # Song class definition
+- headphone.py             # Headphone class definition
+- test_song.py             # Unit tests
+- requirements.txt         # Python dependencies
+- README.md                # This file
 ```

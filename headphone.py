@@ -13,9 +13,9 @@ class Headphone:
         self.model = model
         self.price = float(price)
         self.hp_type = hp_type
-        self.use_case = use_case  # workout, casual, studio
-        self.bass_level = bass_level  # low, medium, high
-        self.sound_profile = sound_profile  # balanced, bass-heavy, flat
+        self.use_case = use_case
+        self.bass_level = bass_level
+        self.sound_profile = sound_profile
         self.noise_cancellation = noise_cancellation == "Yes"
 
     def matches_use_case(self, use_case):
