@@ -1,6 +1,21 @@
 headphone_id,brand,model,price,type,use_case,bass_level,sound_profile,noise_cancellation
 1,Sony,WH-1000XM5,399,Over-ear,Casual,Medium,Balanced,Yes
-2,Beats,Studio Pro,349,Over-ear,Workout,High,Bass-heavy,Yes
-3,Audio-Technica,ATH-M50x,149,Over-ear,Studio,Medium,Flat,No
-4,Bose,QuietComfort 45,329,Over-ear,Casual,Medium,Balanced,Yes
-5,Sennheiser,HD 660S,499,Over-ear,Studio,Low,Flat,No
+2,Bose,QuietComfort 45,329,Over-ear,Casual,Medium,Balanced,Yes
+3,Apple,AirPods Max,549,Over-ear,Casual,Low,Balanced,Yes
+4,Sennheiser,HD 660S,499,Over-ear,Studio,Low,Flat,No
+5,Audio-Technica,ATH-M50x,149,Over-ear,Studio,Medium,Flat,No
+6,Beats,Studio Pro,349,Over-ear,Casual,High,Bass-heavy,Yes
+7,JBL,Tune 760NC,129,Over-ear,Workout,High,Bass-heavy,Yes
+8,Jabra,Elite 85h,249,Over-ear,Casual,Medium,Balanced,Yes
+9,Beyerdynamic,DT 770 PRO,159,Over-ear,Studio,Medium,Flat,No
+10,Sony,WF-1000XM5,299,In-ear,Casual,Medium,Balanced,Yes
+11,Bose,Sport Earbuds,179,In-ear,Workout,High,Bass-heavy,No
+12,Apple,AirPods Pro 2,249,In-ear,Casual,Low,Balanced,Yes
+13,Samsung,Galaxy Buds2 Pro,229,In-ear,Casual,Medium,Balanced,Yes
+14,Anker,Soundcore Life Q30,79,Over-ear,Casual,High,Bass-heavy,Yes
+15,Shure,SE215,99,In-ear,Studio,Low,Flat,No
+16,Powerbeats,Pro,199,In-ear,Workout,High,Bass-heavy,No
+17,AKG,K371,149,Over-ear,Studio,Low,Flat,No
+18,Skullcandy,Crusher Evo,199,Over-ear,Casual,High,Bass-heavy,No
+19,1MORE,SonoFlow,99,Over-ear,Casual,Medium,Balanced,Yes
+20,Focal,Bathys,799,Over-ear,Studio,Low,Balanced,Yes
