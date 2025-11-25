@@ -280,7 +280,7 @@ class MusicMatchApp:
         scrollbar.pack(side="right", fill="y")
 
         # Display songs
-        for i, song in enumerate(self.songs[:50], 1):  # Limit to first 50
+        for i, song in enumerate(self.songs, 1):  # Limit to first 50
             text_widget.insert(tk.END, f"{i}. {song}\n")
 
         text_widget.config(state="disabled")
