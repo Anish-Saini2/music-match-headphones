@@ -12,7 +12,7 @@ Music Match Headphones analyzes a user's music taste (genre preferences, audio f
 
 ## Features
 
-### Current Features (Milestone Submission)
+### Current Features 
 - **Data Management**: Loads and stores 33,000+ Spotify songs with audio features
 - **Genre Selection**: Dropdown menu to select favorite music genre
 - **Use Case Selection**: Radio buttons for workout, casual, or studio use
@@ -20,7 +20,7 @@ Music Match Headphones analyzes a user's music taste (genre preferences, audio f
 - **Song Browser**: View and filter all songs by genre
 - **Interactive GUI**: User-friendly graphical interface built with tkinter
 
-### Planned Features (Final Submission)
+### Planned Features 
 - Advanced recommendation algorithm using machine learning
 - User profile creation and preference saving
 - Audio feature visualization
