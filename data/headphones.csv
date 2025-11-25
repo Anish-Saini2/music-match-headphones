@@ -1,0 +1,6 @@
+headphone_id,brand,model,price,type,use_case,bass_level,sound_profile,noise_cancellation
+1,Sony,WH-1000XM5,399,Over-ear,Casual,Medium,Balanced,Yes
+2,Beats,Studio Pro,349,Over-ear,Workout,High,Bass-heavy,Yes
+3,Audio-Technica,ATH-M50x,149,Over-ear,Studio,Medium,Flat,No
+4,Bose,QuietComfort 45,329,Over-ear,Casual,Medium,Balanced,Yes
+5,Sennheiser,HD 660S,499,Over-ear,Studio,Low,Flat,No
