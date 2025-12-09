@@ -13,7 +13,6 @@ from headphone import Headphone
 import random
 import threading
 
-
 class MusicMatchApp:
     def __init__(self, root):
         """Initialize the Music Match Headphones application"""
@@ -44,7 +43,7 @@ class MusicMatchApp:
         self.selected_songs = []
         self.selected_use_case = None
         self.filtered_songs = []
-        self.current_display_songs = []  # Songs currently displayed
+        self.current_display_songs = []
 
         # Load data
         self.songs = []
@@ -71,10 +70,10 @@ class MusicMatchApp:
 
         # Configure scrollbar
         style.configure("Vertical.TScrollbar",
-                        background=self.colors['bg_lighter'],
-                        troughcolor=self.colors['bg_dark'],
-                        borderwidth=0,
-                        arrowcolor=self.colors['text_secondary'])
+                       background=self.colors['bg_lighter'],
+                       troughcolor=self.colors['bg_dark'],
+                       borderwidth=0,
+                       arrowcolor=self.colors['text_secondary'])
 
     def load_data(self):
         """Load song and headphone data from CSV files"""
@@ -90,15 +89,15 @@ class MusicMatchApp:
 
             # Check if required columns exist
             required_columns = ['track_id', 'track_name', 'track_artist',
-                                'track_popularity', 'playlist_genre', 'playlist_subgenre',
-                                'danceability', 'energy', 'valence', 'tempo',
-                                'acousticness', 'loudness']
+                              'track_popularity', 'playlist_genre', 'playlist_subgenre',
+                              'danceability', 'energy', 'valence', 'tempo',
+                              'acousticness', 'loudness']
 
             missing_columns = [col for col in required_columns if col not in songs_df.columns]
             if missing_columns:
                 messagebox.showerror("Error",
-                                     f"Missing columns in spotify_songs.csv: {missing_columns}\n\n"
-                                     f"Available columns: {songs_df.columns.tolist()}")
+                                   f"Missing columns in spotify_songs.csv: {missing_columns}\n\n"
+                                   f"Available columns: {songs_df.columns.tolist()}")
                 return
 
             # Store the dataframe for lazy loading
@@ -148,12 +147,115 @@ class MusicMatchApp:
 
         except FileNotFoundError as e:
             messagebox.showerror("Error",
-                                 f"Data file not found: {e}\n\n"
-                                 f"Make sure spotify_songs.csv and headphones.csv are in the data/ folder")
+                               f"Data file not found: {e}\n\n"
+                               f"Make sure spotify_songs.csv and headphones.csv are in the data/ folder")
         except Exception as e:
             messagebox.showerror("Error", f"Error loading data: {e}")
             import traceback
             traceback.print_exc()
+
+    def create_song_row(self, parent, index, song):
+        """Create a song row - Spotify style"""
+        is_selected = song in self.selected_songs
+        bg_color = self.colors['selected'] if is_selected else self.colors['bg_dark']
+
+        row = tk.Frame(parent, bg=bg_color, cursor="hand2", height=60)
+        row.pack(fill="x", pady=1)
+        row.pack_propagate(False)
+
+        # Index/Checkbox
+        index_frame = tk.Frame(row, bg=bg_color, width=50)
+        index_frame.pack(side="left")
+        index_frame.pack_propagate(False)
+
+        if is_selected:
+            tk.Label(index_frame, text="✓", font=("Segoe UI", 14, "bold"),
+                     bg=bg_color, fg=self.colors['success']).pack(expand=True)
+        else:
+            tk.Label(index_frame, text=str(index), font=("Segoe UI", 11),
+                     bg=bg_color, fg=self.colors['text_muted']).pack(expand=True)
+
+        # Title
+        title_text = song.track_name[:50] + "..." if len(song.track_name) > 50 else song.track_name
+        title_label = tk.Label(row, text=title_text, font=("Segoe UI", 11),
+                               bg=bg_color, fg=self.colors['text_primary'],
+                               anchor="w", width=40)
+        title_label.pack(side="left", padx=5)
+
+        # Artist
+        artist_text = song.track_artist[:40] + "..." if len(song.track_artist) > 40 else song.track_artist
+        artist_label = tk.Label(row, text=artist_text, font=("Segoe UI", 10),
+                                bg=bg_color, fg=self.colors['text_secondary'],
+                                anchor="w", width=30)
+        artist_label.pack(side="left", padx=5)
+
+        # Energy
+        energy_label = tk.Label(row, text=f"{song.energy:.2f}", font=("Segoe UI", 10),
+                                bg=bg_color, fg=self.colors['text_secondary'],
+                                anchor="center", width=10)
+        energy_label.pack(side="left", padx=5)
+
+        # Tempo
+        tempo_label = tk.Label(row, text=f"{song.tempo:.0f}", font=("Segoe UI", 10),
+                               bg=bg_color, fg=self.colors['text_secondary'],
+                               anchor="center", width=10)
+        tempo_label.pack(side="left", padx=5)
+
+        # Bind click
+        def click_handler(e):
+            self.toggle_song_selection_list(song)
+
+        row.bind("<Button-1>", click_handler)
+        for child in row.winfo_children():
+            child.bind("<Button-1>", click_handler)
+            for grandchild in child.winfo_children():
+                grandchild.bind("<Button-1>", click_handler)
+
+        # Hover effect
+        def on_enter(e):
+            if song not in self.selected_songs:
+                row.config(bg=self.colors['hover'])
+                index_frame.config(bg=self.colors['hover'])
+                for widget in [title_label, artist_label, energy_label, tempo_label]:
+                    widget.config(bg=self.colors['hover'])
+                for child in index_frame.winfo_children():
+                    if isinstance(child, tk.Label):
+                        child.config(bg=self.colors['hover'])
+
+        def on_leave(e):
+            if song not in self.selected_songs:
+                row.config(bg=self.colors['bg_dark'])
+                index_frame.config(bg=self.colors['bg_dark'])
+                for widget in [title_label, artist_label, energy_label, tempo_label]:
+                    widget.config(bg=self.colors['bg_dark'])
+                for child in index_frame.winfo_children():
+                    if isinstance(child, tk.Label):
+                        child.config(bg=self.colors['bg_dark'])
+
+        row.bind("<Enter>", on_enter)
+        row.bind("<Leave>", on_leave)
+
+    def toggle_song_selection_list(self, song):
+        """Toggle song selection from list"""
+        if song in self.selected_songs:
+            self.selected_songs.remove(song)
+        else:
+            if len(self.selected_songs) >= 5:
+                messagebox.showwarning("Limit Reached",
+                                       "You can only select up to 5 songs.",
+                                       parent=self.root)
+                return
+            self.selected_songs.append(song)
+
+        # Update count
+        self.selected_count_label.config(text=f"{len(self.selected_songs)}/5")
+
+        # Refresh display
+        search_term = self.song_search_var.get()
+        if search_term and search_term != "Search songs or artists...":
+            self.on_search_change()
+        else:
+            self.display_songs(self.current_display_songs)
 
     def clear_screen(self):
         """Clear all widgets from main container"""
@@ -166,17 +268,17 @@ class MusicMatchApp:
 
         # Create canvas for gradient
         canvas = tk.Canvas(button_frame, width=width, height=50,
-                           bg=self.colors['bg_dark'], highlightthickness=0,
-                           cursor="hand2")
+                          bg=self.colors['bg_dark'], highlightthickness=0,
+                          cursor="hand2")
         canvas.pack()
 
         # Draw gradient
         gradient = canvas.create_rectangle(0, 0, width, 50,
-                                           fill=self.colors['primary_red'],
-                                           outline="")
+                                          fill=self.colors['primary_red'],
+                                          outline="")
 
         # Add text
-        text_id = canvas.create_text(width // 2, 25, text=text,
+        text_id = canvas.create_text(width//2, 25, text=text,
                                      font=("Segoe UI", 12, "bold"),
                                      fill=self.colors['text_primary'])
 
@@ -202,13 +304,13 @@ class MusicMatchApp:
             bg_color = self.colors['primary_red']
 
         button = tk.Button(parent, text=text, command=command,
-                           font=("Segoe UI", 11, "bold"),
-                           bg=bg_color, fg=self.colors['text_primary'],
-                           activebackground=self.colors['primary_red_hover'],
-                           activeforeground=self.colors['text_primary'],
-                           relief="flat", cursor="hand2",
-                           borderwidth=0, highlightthickness=0,
-                           padx=25, pady=12)
+                          font=("Segoe UI", 11, "bold"),
+                          bg=bg_color, fg=self.colors['text_primary'],
+                          activebackground=self.colors['primary_red_hover'],
+                          activeforeground=self.colors['text_primary'],
+                          relief="flat", cursor="hand2",
+                          borderwidth=0, highlightthickness=0,
+                          padx=25, pady=12)
 
         if width:
             button.config(width=width)
@@ -234,31 +336,31 @@ class MusicMatchApp:
 
         # Logo/Icon
         tk.Label(welcome_frame, text="🎧", font=("Segoe UI Emoji", 80),
-                 bg=self.colors['bg_dark']).pack(pady=30)
+                bg=self.colors['bg_dark']).pack(pady=30)
 
         # Title
         tk.Label(welcome_frame, text="Music Match Headphones",
-                 font=("Segoe UI", 42, "bold"), bg=self.colors['bg_dark'],
-                 fg=self.colors['text_primary']).pack(pady=10)
+                font=("Segoe UI", 42, "bold"), bg=self.colors['bg_dark'],
+                fg=self.colors['text_primary']).pack(pady=10)
 
         # Subtitle with gradient effect
         subtitle_frame = tk.Frame(welcome_frame, bg=self.colors['bg_dark'])
         subtitle_frame.pack(pady=15)
 
         tk.Label(subtitle_frame,
-                 text="Find Your Perfect",
-                 font=("Segoe UI", 16), bg=self.colors['bg_dark'],
-                 fg=self.colors['text_secondary']).pack()
+                text="Find Your Perfect",
+                font=("Segoe UI", 16), bg=self.colors['bg_dark'],
+                fg=self.colors['text_secondary']).pack()
         tk.Label(subtitle_frame,
-                 text="Headphones",
-                 font=("Segoe UI", 16, "bold"), bg=self.colors['bg_dark'],
-                 fg=self.colors['primary_red']).pack()
+                text="Headphones",
+                font=("Segoe UI", 16, "bold"), bg=self.colors['bg_dark'],
+                fg=self.colors['primary_red']).pack()
 
         # Description
         tk.Label(welcome_frame,
-                 text="Personalized recommendations based on your music taste",
-                 font=("Segoe UI", 13), bg=self.colors['bg_dark'],
-                 fg=self.colors['text_muted']).pack(pady=20)
+                text="Personalized recommendations based on your music taste",
+                font=("Segoe UI", 13), bg=self.colors['bg_dark'],
+                fg=self.colors['text_muted']).pack(pady=20)
 
         # Start button with gradient
         start_btn = self.create_gradient_button(welcome_frame, "GET STARTED →",
@@ -286,9 +388,9 @@ class MusicMatchApp:
             inner.pack(padx=35, pady=20)
 
             tk.Label(inner, text=value, font=("Segoe UI", 32, "bold"),
-                     bg=self.colors['bg_card'], fg=color).pack()
+                    bg=self.colors['bg_card'], fg=color).pack()
             tk.Label(inner, text=label, font=("Segoe UI", 12),
-                     bg=self.colors['bg_card'], fg=self.colors['text_secondary']).pack()
+                    bg=self.colors['bg_card'], fg=self.colors['text_secondary']).pack()
 
     def show_genre_selection(self):
         """Show genre selection screen"""
@@ -301,11 +403,11 @@ class MusicMatchApp:
         header_frame.pack_propagate(False)
 
         tk.Label(header_frame, text="STEP 1 OF 3",
-                 font=("Segoe UI", 10), bg=self.colors['bg_card'],
-                 fg=self.colors['text_muted']).pack(pady=(20, 5))
+                font=("Segoe UI", 10), bg=self.colors['bg_card'],
+                fg=self.colors['text_muted']).pack(pady=(20, 5))
         tk.Label(header_frame, text="Choose Your Genre",
-                 font=("Segoe UI", 26, "bold"), bg=self.colors['bg_card'],
-                 fg=self.colors['text_primary']).pack()
+                font=("Segoe UI", 26, "bold"), bg=self.colors['bg_card'],
+                fg=self.colors['text_primary']).pack()
 
         # Main content with scrolling
         main_frame = tk.Frame(self.main_container, bg=self.colors['bg_dark'])
@@ -324,8 +426,7 @@ class MusicMatchApp:
         canvas.configure(yscrollcommand=scrollbar.set)
 
         def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
         # Content
@@ -364,22 +465,22 @@ class MusicMatchApp:
 
         # Card
         card = tk.Frame(parent, bg=self.colors['bg_card'], cursor="hand2",
-                        width=280, height=200)
+                       width=280, height=200)
         card.pack_propagate(False)
 
         # Emoji
         tk.Label(card, text=emoji, font=("Segoe UI Emoji", 60),
-                 bg=self.colors['bg_card']).pack(pady=(35, 15))
+                bg=self.colors['bg_card']).pack(pady=(35, 15))
 
         # Genre name
         tk.Label(card, text=genre.upper(), font=("Segoe UI", 18, "bold"),
-                 bg=self.colors['bg_card'], fg=self.colors['text_primary']).pack()
+                bg=self.colors['bg_card'], fg=self.colors['text_primary']).pack()
 
         # Song count
         genre_count = self.genre_counts.get(genre, 0)
         tk.Label(card, text=f"{genre_count:,} songs",
-                 font=("Segoe UI", 11), bg=self.colors['bg_card'],
-                 fg=self.colors['text_secondary']).pack(pady=15)
+                font=("Segoe UI", 11), bg=self.colors['bg_card'],
+                fg=self.colors['text_secondary']).pack(pady=15)
 
         # Add accent line at bottom
         accent_line = tk.Frame(card, bg=self.colors['primary_red'], height=3)
@@ -463,20 +564,20 @@ class MusicMatchApp:
         loading_frame.pack(expand=True)
 
         tk.Label(loading_frame, text="🎵", font=("Segoe UI Emoji", 80),
-                 bg=self.colors['bg_dark']).pack(pady=30)
+                bg=self.colors['bg_dark']).pack(pady=30)
 
         tk.Label(loading_frame, text="Loading Songs...",
-                 font=("Segoe UI", 24, "bold"), bg=self.colors['bg_dark'],
-                 fg=self.colors['text_primary']).pack(pady=10)
+                font=("Segoe UI", 24, "bold"), bg=self.colors['bg_dark'],
+                fg=self.colors['text_primary']).pack(pady=10)
 
         tk.Label(loading_frame, text=f"Preparing {self.genre_counts.get(self.selected_genre, 0):,} songs",
-                 font=("Segoe UI", 13), bg=self.colors['bg_dark'],
-                 fg=self.colors['text_secondary']).pack()
+                font=("Segoe UI", 13), bg=self.colors['bg_dark'],
+                fg=self.colors['text_secondary']).pack()
 
         # Animated dots
         self.loading_label = tk.Label(loading_frame, text="",
-                                      font=("Segoe UI", 16), bg=self.colors['bg_dark'],
-                                      fg=self.colors['primary_red'])
+                                     font=("Segoe UI", 16), bg=self.colors['bg_dark'],
+                                     fg=self.colors['primary_red'])
         self.loading_label.pack(pady=20)
 
         self.animate_loading()
@@ -504,15 +605,15 @@ class MusicMatchApp:
         left_header.pack(side="left")
 
         tk.Label(left_header, text="STEP 2 OF 3",
-                 font=("Segoe UI", 10), bg=self.colors['bg_card'],
-                 fg=self.colors['text_muted']).pack(anchor="w")
+                font=("Segoe UI", 10), bg=self.colors['bg_card'],
+                fg=self.colors['text_muted']).pack(anchor="w")
         tk.Label(left_header, text=f"{self.selected_genre.upper()} • Select 5 Songs",
-                 font=("Segoe UI", 24, "bold"), bg=self.colors['bg_card'],
-                 fg=self.colors['text_primary']).pack(anchor="w", pady=(5, 0))
+                font=("Segoe UI", 24, "bold"), bg=self.colors['bg_card'],
+                fg=self.colors['text_primary']).pack(anchor="w", pady=(5, 0))
 
         tk.Label(left_header, text=f"{len(self.filtered_songs):,} songs available",
-                 font=("Segoe UI", 10), bg=self.colors['bg_card'],
-                 fg=self.colors['text_muted']).pack(anchor="w", pady=(5, 0))
+                font=("Segoe UI", 10), bg=self.colors['bg_card'],
+                fg=self.colors['text_muted']).pack(anchor="w", pady=(5, 0))
 
         # Right side - Selected count
         right_header = tk.Frame(header_inner, bg=self.colors['bg_card'])
@@ -525,8 +626,8 @@ class MusicMatchApp:
                                              fg=self.colors['primary_red'])
         self.selected_count_label.pack()
         tk.Label(right_header, text="SELECTED",
-                 font=("Segoe UI", 10), bg=self.colors['bg_card'],
-                 fg=self.colors['text_muted']).pack()
+                font=("Segoe UI", 10), bg=self.colors['bg_card'],
+                fg=self.colors['text_muted']).pack()
 
         # Search bar
         search_frame = tk.Frame(self.main_container, bg=self.colors['bg_dark'])
@@ -536,15 +637,15 @@ class MusicMatchApp:
         search_inner.pack(fill="x")
 
         tk.Label(search_inner, text="🔍", font=("Segoe UI", 14),
-                 bg=self.colors['bg_lighter'], fg=self.colors['text_muted']).pack(side="left", padx=(15, 5))
+                bg=self.colors['bg_lighter'], fg=self.colors['text_muted']).pack(side="left", padx=(15, 5))
 
         self.song_search_var = tk.StringVar()
 
         search_entry = tk.Entry(search_inner, textvariable=self.song_search_var,
-                                font=("Segoe UI", 13), bg=self.colors['bg_lighter'],
-                                fg=self.colors['text_primary'], relief="flat",
-                                insertbackground=self.colors['text_primary'],
-                                borderwidth=0, highlightthickness=0)
+                               font=("Segoe UI", 13), bg=self.colors['bg_lighter'],
+                               fg=self.colors['text_primary'], relief="flat",
+                               insertbackground=self.colors['text_primary'],
+                               borderwidth=0, highlightthickness=0)
         search_entry.pack(side="left", fill="x", expand=True, padx=(5, 15), pady=15)
         search_entry.insert(0, "Search songs or artists...")
 
@@ -575,20 +676,20 @@ class MusicMatchApp:
         header.pack(fill="x", pady=(0, 10))
 
         tk.Label(header, text="#", font=("Segoe UI", 11, "bold"),
-                 bg=self.colors['bg_dark'], fg=self.colors['text_muted'],
-                 width=4, anchor="w").pack(side="left", padx=(10, 5))
+                bg=self.colors['bg_dark'], fg=self.colors['text_muted'],
+                width=4, anchor="w").pack(side="left", padx=(10, 5))
         tk.Label(header, text="TITLE", font=("Segoe UI", 11, "bold"),
-                 bg=self.colors['bg_dark'], fg=self.colors['text_muted'],
-                 anchor="w", width=40).pack(side="left", padx=5)
+                bg=self.colors['bg_dark'], fg=self.colors['text_muted'],
+                anchor="w", width=40).pack(side="left", padx=5)
         tk.Label(header, text="ARTIST", font=("Segoe UI", 11, "bold"),
-                 bg=self.colors['bg_dark'], fg=self.colors['text_muted'],
-                 anchor="w", width=30).pack(side="left", padx=5)
+                bg=self.colors['bg_dark'], fg=self.colors['text_muted'],
+                anchor="w", width=30).pack(side="left", padx=5)
         tk.Label(header, text="ENERGY", font=("Segoe UI", 11, "bold"),
-                 bg=self.colors['bg_dark'], fg=self.colors['text_muted'],
-                 anchor="center", width=10).pack(side="left", padx=5)
+                bg=self.colors['bg_dark'], fg=self.colors['text_muted'],
+                anchor="center", width=10).pack(side="left", padx=5)
         tk.Label(header, text="TEMPO", font=("Segoe UI", 11, "bold"),
-                 bg=self.colors['bg_dark'], fg=self.colors['text_muted'],
-                 anchor="center", width=10).pack(side="left", padx=5)
+                bg=self.colors['bg_dark'], fg=self.colors['text_muted'],
+                anchor="center", width=10).pack(side="left", padx=5)
 
         # Separator
         tk.Frame(list_frame, bg=self.colors['bg_lighter'], height=1).pack(fill="x")
@@ -607,26 +708,15 @@ class MusicMatchApp:
         canvas.configure(yscrollcommand=scrollbar.set)
 
         def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
-
-        # Set trace after container is created
-        self.song_search_var.trace('w', self.filter_songs)
 
         # Display initial songs (first 100)
         self.current_display_songs = self.filtered_songs[:100]
         self.display_songs(self.current_display_songs)
 
-        # Add "Load More" button if there are more songs
-        if len(self.filtered_songs) > 100:
-            load_more_frame = tk.Frame(self.songs_container, bg=self.colors['bg_dark'])
-            load_more_frame.pack(pady=20)
-
-            self.load_more_btn = self.create_modern_button(load_more_frame,
-                                                           f"LOAD MORE ({len(self.filtered_songs) - 100} remaining)",
-                                                           self.load_more_songs)
-            self.load_more_btn.pack()
+        # Set trace AFTER displaying songs
+        self.song_search_var.trace('w', self.on_search_change)
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
@@ -647,6 +737,21 @@ class MusicMatchApp:
                                              self.validate_and_show_use_case)
         next_btn.pack(side="left", padx=10)
 
+    def on_search_change(self, *args):
+        """Handle search text changes"""
+        search_term = self.song_search_var.get()
+        if not search_term or search_term == "Search songs or artists...":
+            self.current_display_songs = self.filtered_songs[:100]
+            self.display_songs(self.current_display_songs)
+            return
+
+        filtered = [s for s in self.filtered_songs
+                   if search_term.lower() in s.track_name.lower() or
+                   search_term.lower() in s.track_artist.lower()]
+
+        self.current_display_songs = filtered[:100]
+        self.display_songs(filtered)
+
     def load_more_songs(self):
         """Load more songs in batches"""
         current_count = len(self.current_display_songs)
@@ -655,13 +760,6 @@ class MusicMatchApp:
         if next_batch:
             self.current_display_songs.extend(next_batch)
             self.display_songs(self.current_display_songs)
-
-            # Update or hide load more button
-            remaining = len(self.filtered_songs) - len(self.current_display_songs)
-            if remaining > 0:
-                self.load_more_btn.config(text=f"LOAD MORE ({remaining} remaining)")
-            else:
-                self.load_more_btn.pack_forget()
 
     def display_songs(self, songs):
         """Display songs in the list"""
@@ -697,464 +795,449 @@ class MusicMatchApp:
                                                            self.load_more_songs)
             self.load_more_btn.pack()
 
-        def create_song_row(self, parent, index, song):
-            """Create a song row - Spotify style"""
-            is_selected = song in self.selected_songs
-            bg_color = self.colors['selected'] if is_selected else self.colors['bg_dark']
+    def create_song_row(self, parent, index, song):
+        """Create a song row - Spotify style"""
+        is_selected = song in self.selected_songs
+        bg_color = self.colors['selected'] if is_selected else self.colors['bg_dark']
 
-            row = tk.Frame(parent, bg=bg_color, cursor="hand2", height=60)
-            row.pack(fill="x", pady=1)
-            row.pack_propagate(False)
+        row = tk.Frame(parent, bg=bg_color, cursor="hand2", height=60)
+        row.pack(fill="x", pady=1)
+        row.pack_propagate(False)
 
-            # Index/Checkbox
-            index_frame = tk.Frame(row, bg=bg_color, width=50)
-            index_frame.pack(side="left")
-            index_frame.pack_propagate(False)
+        # Index/Checkbox
+        index_frame = tk.Frame(row, bg=bg_color, width=50)
+        index_frame.pack(side="left")
+        index_frame.pack_propagate(False)
 
-            if is_selected:
-                tk.Label(index_frame, text="✓", font=("Segoe UI", 14, "bold"),
-                         bg=bg_color, fg=self.colors['success']).pack(expand=True)
-            else:
-                tk.Label(index_frame, text=str(index), font=("Segoe UI", 11),
-                         bg=bg_color, fg=self.colors['text_muted']).pack(expand=True)
+        if is_selected:
+            tk.Label(index_frame, text="✓", font=("Segoe UI", 14, "bold"),
+                     bg=bg_color, fg=self.colors['success']).pack(expand=True)
+        else:
+            tk.Label(index_frame, text=str(index), font=("Segoe UI", 11),
+                     bg=bg_color, fg=self.colors['text_muted']).pack(expand=True)
 
-            # Title
-            title_text = song.track_name[:50] + "..." if len(song.track_name) > 50 else song.track_name
-            title_label = tk.Label(row, text=title_text, font=("Segoe UI", 11),
-                                   bg=bg_color, fg=self.colors['text_primary'],
-                                   anchor="w", width=40)
-            title_label.pack(side="left", padx=5)
+        # Title
+        title_text = song.track_name[:50] + "..." if len(song.track_name) > 50 else song.track_name
+        title_label = tk.Label(row, text=title_text, font=("Segoe UI", 11),
+                               bg=bg_color, fg=self.colors['text_primary'],
+                               anchor="w", width=40)
+        title_label.pack(side="left", padx=5)
 
-            # Artist
-            artist_text = song.track_artist[:40] + "..." if len(song.track_artist) > 40 else song.track_artist
-            artist_label = tk.Label(row, text=artist_text, font=("Segoe UI", 10),
-                                    bg=bg_color, fg=self.colors['text_secondary'],
-                                    anchor="w", width=30)
-            artist_label.pack(side="left", padx=5)
+        # Artist
+        artist_text = song.track_artist[:40] + "..." if len(song.track_artist) > 40 else song.track_artist
+        artist_label = tk.Label(row, text=artist_text, font=("Segoe UI", 10),
+                                bg=bg_color, fg=self.colors['text_secondary'],
+                                anchor="w", width=30)
+        artist_label.pack(side="left", padx=5)
 
-            # Energy
-            energy_label = tk.Label(row, text=f"{song.energy:.2f}", font=("Segoe UI", 10),
-                                    bg=bg_color, fg=self.colors['text_secondary'],
-                                    anchor="center", width=10)
-            energy_label.pack(side="left", padx=5)
+        # Energy
+        energy_label = tk.Label(row, text=f"{song.energy:.2f}", font=("Segoe UI", 10),
+                                bg=bg_color, fg=self.colors['text_secondary'],
+                                anchor="center", width=10)
+        energy_label.pack(side="left", padx=5)
 
-            # Tempo
-            tempo_label = tk.Label(row, text=f"{song.tempo:.0f}", font=("Segoe UI", 10),
-                                   bg=bg_color, fg=self.colors['text_secondary'],
-                                   anchor="center", width=10)
-            tempo_label.pack(side="left", padx=5)
+        # Tempo
+        tempo_label = tk.Label(row, text=f"{song.tempo:.0f}", font=("Segoe UI", 10),
+                               bg=bg_color, fg=self.colors['text_secondary'],
+                               anchor="center", width=10)
+        tempo_label.pack(side="left", padx=5)
 
-            # Bind click
-            def click_handler(e):
-                self.toggle_song_selection_list(song)
+        # Bind click
+        def click_handler(e):
+            self.toggle_song_selection_list(song)
 
-            row.bind("<Button-1>", click_handler)
-            for child in row.winfo_children():
-                child.bind("<Button-1>", click_handler)
-                for grandchild in child.winfo_children():
-                    grandchild.bind("<Button-1>", click_handler)
+        row.bind("<Button-1>", click_handler)
+        for child in row.winfo_children():
+            child.bind("<Button-1>", click_handler)
+            for grandchild in child.winfo_children():
+                grandchild.bind("<Button-1>", click_handler)
 
-            # Hover effect
-            def on_enter(e):
-                if song not in self.selected_songs:
-                    row.config(bg=self.colors['hover'])
-                    index_frame.config(bg=self.colors['hover'])
-                    for widget in [title_label, artist_label, energy_label, tempo_label]:
-                        widget.config(bg=self.colors['hover'])
-                    for child in index_frame.winfo_children():
-                        if isinstance(child, tk.Label):
-                            child.config(bg=self.colors['hover'])
-
-            def on_leave(e):
-                if song not in self.selected_songs:
-                    row.config(bg=self.colors['bg_dark'])
-                    index_frame.config(bg=self.colors['bg_dark'])
-                    for widget in [title_label, artist_label, energy_label, tempo_label]:
-                        widget.config(bg=self.colors['bg_dark'])
-                    for child in index_frame.winfo_children():
-                        if isinstance(child, tk.Label):
-                            child.config(bg=self.colors['bg_dark'])
-
-            row.bind("<Enter>", on_enter)
-            row.bind("<Leave>", on_leave)
-
-        def toggle_song_selection_list(self, song):
-            """Toggle song selection from list"""
-            if song in self.selected_songs:
-                self.selected_songs.remove(song)
-            else:
-                if len(self.selected_songs) >= 5:
-                    messagebox.showwarning("Limit Reached",
-                                           "You can only select up to 5 songs.",
-                                           parent=self.root)
-                    return
-                self.selected_songs.append(song)
-
-            # Update count
-            self.selected_count_label.config(text=f"{len(self.selected_songs)}/5")
-
-            # Refresh display
-            search_term = self.song_search_var.get()
-            if search_term and search_term != "Search songs or artists...":
-                self.filter_songs()
-            else:
-                self.display_songs(self.current_display_songs)
-
-        def filter_songs(self, *args):
-            """Filter songs based on search"""
-            search_term = self.song_search_var.get()
-            if not search_term or search_term == "Search songs or artists...":
-                self.current_display_songs = self.filtered_songs[:100]
-                self.display_songs(self.current_display_songs)
-                return
-
-            filtered = [s for s in self.filtered_songs
-                        if search_term.lower() in s.track_name.lower() or
-                        search_term.lower() in s.track_artist.lower()]
-
-            self.current_display_songs = filtered[:100]  # Limit search results too
-            self.display_songs(filtered)
-
-        def validate_and_show_use_case(self):
-            """Validate song selection"""
-            if len(self.selected_songs) < 5:
-                messagebox.showwarning("Incomplete Selection",
-                                       f"Please select 5 songs. You have selected {len(self.selected_songs)}.",
-                                       parent=self.root)
-                return
-
-            self.show_use_case_selection()
-
-        def show_use_case_selection(self):
-            """Show use case selection"""
-            self.clear_screen()
-            self.current_screen = 3
-
-            # Header
-            header_frame = tk.Frame(self.main_container, bg=self.colors['bg_card'], height=100)
-            header_frame.pack(fill="x")
-            header_frame.pack_propagate(False)
-
-            tk.Label(header_frame, text="STEP 3 OF 3",
-                     font=("Segoe UI", 10), bg=self.colors['bg_card'],
-                     fg=self.colors['text_muted']).pack(pady=(25, 5))
-            tk.Label(header_frame, text="Choose Your Use Case",
-                     font=("Segoe UI", 26, "bold"), bg=self.colors['bg_card'],
-                     fg=self.colors['text_primary']).pack()
-
-            # Main content
-            main_frame = tk.Frame(self.main_container, bg=self.colors['bg_dark'])
-            main_frame.pack(fill="both", expand=True)
-
-            canvas = tk.Canvas(main_frame, bg=self.colors['bg_dark'], highlightthickness=0)
-            scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
-            scrollable_frame = tk.Frame(canvas, bg=self.colors['bg_dark'])
-
-            scrollable_frame.bind(
-                "<Configure>",
-                lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-            )
-
-            canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=1200)
-            canvas.configure(yscrollcommand=scrollbar.set)
-
-            def _on_mousewheel(event):
-                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
-            canvas.bind_all("<MouseWheel>", _on_mousewheel)
-
-            # Content
-            content_frame = tk.Frame(scrollable_frame, bg=self.colors['bg_dark'])
-            content_frame.pack(padx=100, pady=60)
-
-            # Use cases
-            use_cases = [
-                ("Workout", "🏋️", "High-energy activities, sweat-resistant"),
-                ("Casual", "☕", "Daily listening, commuting, relaxation"),
-                ("Studio", "🎙️", "Professional audio work, accurate sound"),
-                ("Gaming", "🎮", "Gaming sessions, immersive audio")
-            ]
-
-            # Cards
-            cards_frame = tk.Frame(content_frame, bg=self.colors['bg_dark'])
-            cards_frame.pack()
-
-            row = 0
-            col = 0
-            for use_case, emoji, description in use_cases:
-                card = self.create_dark_use_case_card(cards_frame, use_case, emoji, description)
-                card.grid(row=row, column=col, padx=30, pady=30)
-
-                col += 1
-                if col >= 2:
-                    col = 0
-                    row += 1
-
-            # Navigation
-            nav_frame = tk.Frame(content_frame, bg=self.colors['bg_dark'])
-            nav_frame.pack(pady=30)
-
-            back_btn = self.create_modern_button(nav_frame, "← BACK",
-                                                 self.show_song_selection,
-                                                 bg_color=self.colors['bg_lighter'])
-            back_btn.pack()
-
-            canvas.pack(side="left", fill="both", expand=True)
-            scrollbar.pack(side="right", fill="y")
-
-        def create_dark_use_case_card(self, parent, use_case, emoji, description):
-            """Create dark themed use case card"""
-            card = tk.Frame(parent, bg=self.colors['bg_card'], cursor="hand2",
-                            width=420, height=220)
-            card.pack_propagate(False)
-
-            # Emoji
-            tk.Label(card, text=emoji, font=("Segoe UI Emoji", 70),
-                     bg=self.colors['bg_card']).pack(pady=(40, 20))
-
-            # Use case name
-            tk.Label(card, text=use_case.upper(), font=("Segoe UI", 20, "bold"),
-                     bg=self.colors['bg_card'], fg=self.colors['text_primary']).pack()
-
-            # Description
-            tk.Label(card, text=description, font=("Segoe UI", 12),
-                     bg=self.colors['bg_card'], fg=self.colors['text_secondary'],
-                     wraplength=380).pack(pady=15)
-
-            # Accent line
-            accent = tk.Frame(card, bg=self.colors['primary_red'], height=4)
-            accent.pack(side="bottom", fill="x")
-
-            # Bind events
-            def click_handler(e):
-                self.select_use_case(use_case)
-
-            card.bind("<Button-1>", click_handler)
-            for child in card.winfo_children():
-                child.bind("<Button-1>", click_handler)
-
-            def on_enter(e):
-                card.config(bg=self.colors['hover'])
-                for child in card.winfo_children():
+        # Hover effect
+        def on_enter(e):
+            if song not in self.selected_songs:
+                row.config(bg=self.colors['hover'])
+                index_frame.config(bg=self.colors['hover'])
+                for widget in [title_label, artist_label, energy_label, tempo_label]:
+                    widget.config(bg=self.colors['hover'])
+                for child in index_frame.winfo_children():
                     if isinstance(child, tk.Label):
                         child.config(bg=self.colors['hover'])
 
-            def on_leave(e):
-                card.config(bg=self.colors['bg_card'])
-                for child in card.winfo_children():
+        def on_leave(e):
+            if song not in self.selected_songs:
+                row.config(bg=self.colors['bg_dark'])
+                index_frame.config(bg=self.colors['bg_dark'])
+                for widget in [title_label, artist_label, energy_label, tempo_label]:
+                    widget.config(bg=self.colors['bg_dark'])
+                for child in index_frame.winfo_children():
                     if isinstance(child, tk.Label):
-                        child.config(bg=self.colors['bg_card'])
+                        child.config(bg=self.colors['bg_dark'])
 
-            card.bind("<Enter>", on_enter)
-            card.bind("<Leave>", on_leave)
+        row.bind("<Enter>", on_enter)
+        row.bind("<Leave>", on_leave)
 
-            return card
+    def toggle_song_selection_list(self, song):
+        """Toggle song selection from list"""
+        if song in self.selected_songs:
+            self.selected_songs.remove(song)
+        else:
+            if len(self.selected_songs) >= 5:
+                messagebox.showwarning("Limit Reached",
+                                       "You can only select up to 5 songs.",
+                                       parent=self.root)
+                return
+            self.selected_songs.append(song)
 
-        def select_use_case(self, use_case):
-            """Handle use case selection"""
-            self.selected_use_case = use_case
-            print(f"Selected use case: {use_case}")
-            self.generate_recommendations()
+        # Update count
+        self.selected_count_label.config(text=f"{len(self.selected_songs)}/5")
 
-        def generate_recommendations(self):
-            """Generate headphone recommendations"""
-            print("\n=== Generating Recommendations ===")
-            print(f"Genre: {self.selected_genre}")
-            print(f"Songs: {len(self.selected_songs)}")
-            print(f"Use Case: {self.selected_use_case}")
+        # Refresh display
+        search_term = self.song_search_var.get()
+        if search_term and search_term != "Search songs or artists...":
+            self.on_search_change()
+        else:
+            self.display_songs(self.current_display_songs)
 
-            # Calculate averages
-            avg_energy = sum([s.energy for s in self.selected_songs]) / len(self.selected_songs)
-            avg_bass = sum([s.loudness for s in self.selected_songs]) / len(self.selected_songs)
-            avg_tempo = sum([s.tempo for s in self.selected_songs]) / len(self.selected_songs)
+    def validate_and_show_use_case(self):
+        """Validate song selection"""
+        if len(self.selected_songs) < 5:
+            messagebox.showwarning("Incomplete Selection",
+                                   f"Please select 5 songs. You have selected {len(self.selected_songs)}.",
+                                   parent=self.root)
+            return
 
-            print(f"Avg Energy: {avg_energy:.2f}")
-            print(f"Avg Bass: {avg_bass:.2f}")
-            print(f"Avg Tempo: {avg_tempo:.0f}")
+        self.show_use_case_selection()
 
-            # Filter and score
-            matching_headphones = [hp for hp in self.headphones
-                                   if hp.use_case.lower() == self.selected_use_case.lower()]
+    def show_use_case_selection(self):
+        """Show use case selection"""
+        self.clear_screen()
+        self.current_screen = 3
 
-            scored_headphones = []
-            for hp in matching_headphones:
-                score = 0
+        # Header
+        header_frame = tk.Frame(self.main_container, bg=self.colors['bg_card'], height=100)
+        header_frame.pack(fill="x")
+        header_frame.pack_propagate(False)
 
-                if avg_bass > -4 and hp.bass_level == "High":
-                    score += 3
-                elif avg_bass < -7 and hp.bass_level == "Low":
-                    score += 3
-                elif hp.bass_level == "Medium":
-                    score += 2
+        tk.Label(header_frame, text="STEP 3 OF 3",
+                 font=("Segoe UI", 10), bg=self.colors['bg_card'],
+                 fg=self.colors['text_muted']).pack(pady=(25, 5))
+        tk.Label(header_frame, text="Choose Your Use Case",
+                 font=("Segoe UI", 26, "bold"), bg=self.colors['bg_card'],
+                 fg=self.colors['text_primary']).pack()
 
-                if avg_energy > 0.7 and hp.sound_profile == "Bass-heavy":
-                    score += 2
-                elif avg_energy < 0.4 and hp.sound_profile == "Flat":
-                    score += 2
-                else:
-                    score += 1
+        # Main content
+        main_frame = tk.Frame(self.main_container, bg=self.colors['bg_dark'])
+        main_frame.pack(fill="both", expand=True)
 
-                score += hp.user_rating
-                scored_headphones.append((hp, score))
+        canvas = tk.Canvas(main_frame, bg=self.colors['bg_dark'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['bg_dark'])
 
-            scored_headphones.sort(key=lambda x: x[1], reverse=True)
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
 
-            # Categorize
-            budget = [hp for hp, score in scored_headphones if hp.price < 150][:3]
-            premium = [hp for hp, score in scored_headphones if hp.price > 400][:3]
-            balanced = [hp for hp, score in scored_headphones if 150 <= hp.price <= 400][:3]
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=1200)
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-            recommendations = {
-                "Budget-Friendly": budget,
-                "Best of the Line": premium,
-                "Best of Both": balanced
-            }
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
-            all_recommended = budget + premium + balanced
-            most_reviewed = max(all_recommended,
-                                key=lambda hp: hp.user_rating * hp.user_reviews) if all_recommended else None
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
-            self.show_recommendations(recommendations, most_reviewed)
+        # Content
+        content_frame = tk.Frame(scrollable_frame, bg=self.colors['bg_dark'])
+        content_frame.pack(padx=100, pady=60)
 
-        def show_recommendations(self, recommendations, most_reviewed):
-            """Show recommendations - dark theme"""
-            self.clear_screen()
+        # Use cases
+        use_cases = [
+            ("Workout", "🏋️", "High-energy activities, sweat-resistant"),
+            ("Casual", "☕", "Daily listening, commuting, relaxation"),
+            ("Studio", "🎙️", "Professional audio work, accurate sound"),
+            ("Gaming", "🎮", "Gaming sessions, immersive audio")
+        ]
 
-            # Header
-            header_frame = tk.Frame(self.main_container, bg=self.colors['bg_card'])
-            header_frame.pack(fill="x")
+        # Cards
+        cards_frame = tk.Frame(content_frame, bg=self.colors['bg_dark'])
+        cards_frame.pack()
 
-            header_inner = tk.Frame(header_frame, bg=self.colors['bg_card'])
-            header_inner.pack(pady=30)
+        row = 0
+        col = 0
+        for use_case, emoji, description in use_cases:
+            card = self.create_dark_use_case_card(cards_frame, use_case, emoji, description)
+            card.grid(row=row, column=col, padx=30, pady=30)
 
-            tk.Label(header_inner, text="✨", font=("Segoe UI Emoji", 40),
-                     bg=self.colors['bg_card']).pack()
-            tk.Label(header_inner, text="Your Perfect Headphones",
-                     font=("Segoe UI", 32, "bold"), bg=self.colors['bg_card'],
-                     fg=self.colors['text_primary']).pack(pady=(10, 5))
-            tk.Label(header_inner, text=f"Based on {self.selected_genre} • {self.selected_use_case}",
-                     font=("Segoe UI", 13), bg=self.colors['bg_card'],
-                     fg=self.colors['text_secondary']).pack()
+            col += 1
+            if col >= 2:
+                col = 0
+                row += 1
 
-            # Main content
-            main_frame = tk.Frame(self.main_container, bg=self.colors['bg_dark'])
-            main_frame.pack(fill="both", expand=True)
+        # Navigation
+        nav_frame = tk.Frame(content_frame, bg=self.colors['bg_dark'])
+        nav_frame.pack(pady=30)
 
-            canvas = tk.Canvas(main_frame, bg=self.colors['bg_dark'], highlightthickness=0)
-            scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
-            content_frame = tk.Frame(canvas, bg=self.colors['bg_dark'])
+        back_btn = self.create_modern_button(nav_frame, "← BACK",
+                                             self.show_song_selection,
+                                             bg_color=self.colors['bg_lighter'])
+        back_btn.pack()
 
-            content_frame.bind(
-                "<Configure>",
-                lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-            )
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
-            canvas.create_window((0, 0), window=content_frame, anchor="nw", width=1160)
-            canvas.configure(yscrollcommand=scrollbar.set)
+    def create_dark_use_case_card(self, parent, use_case, emoji, description):
+        """Create dark themed use case card"""
+        card = tk.Frame(parent, bg=self.colors['bg_card'], cursor="hand2",
+                        width=420, height=220)
+        card.pack_propagate(False)
 
-            def _on_mousewheel(event):
-                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        # Emoji
+        tk.Label(card, text=emoji, font=("Segoe UI Emoji", 70),
+                 bg=self.colors['bg_card']).pack(pady=(40, 20))
 
-            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        # Use case name
+        tk.Label(card, text=use_case.upper(), font=("Segoe UI", 20, "bold"),
+                 bg=self.colors['bg_card'], fg=self.colors['text_primary']).pack()
 
-            # Most reviewed
-            if most_reviewed:
-                featured_frame = tk.Frame(content_frame, bg=self.colors['bg_dark'])
-                featured_frame.pack(padx=40, pady=30)
+        # Description
+        tk.Label(card, text=description, font=("Segoe UI", 12),
+                 bg=self.colors['bg_card'], fg=self.colors['text_secondary'],
+                 wraplength=380).pack(pady=15)
 
-                tk.Label(featured_frame, text="⭐ MOST POSITIVELY REVIEWED",
-                         font=("Segoe UI", 14, "bold"), bg=self.colors['bg_dark'],
-                         fg=self.colors['warning']).pack(pady=(0, 15))
+        # Accent line
+        accent = tk.Frame(card, bg=self.colors['primary_red'], height=4)
+        accent.pack(side="bottom", fill="x")
 
-                self.create_dark_headphone_card(featured_frame, most_reviewed, True)
+        # Bind events
+        def click_handler(e):
+            self.select_use_case(use_case)
 
-            # Categories
-            for category, headphones in recommendations.items():
-                if not headphones:
-                    continue
+        card.bind("<Button-1>", click_handler)
+        for child in card.winfo_children():
+            child.bind("<Button-1>", click_handler)
 
-                cat_frame = tk.Frame(content_frame, bg=self.colors['bg_dark'])
-                cat_frame.pack(padx=40, pady=20, fill="x")
+        def on_enter(e):
+            card.config(bg=self.colors['hover'])
+            for child in card.winfo_children():
+                if isinstance(child, tk.Label):
+                    child.config(bg=self.colors['hover'])
 
-                tk.Label(cat_frame, text=category.upper(),
-                         font=("Segoe UI", 14, "bold"), bg=self.colors['bg_dark'],
-                         fg=self.colors['primary_red']).pack(anchor="w", pady=(0, 15))
+        def on_leave(e):
+            card.config(bg=self.colors['bg_card'])
+            for child in card.winfo_children():
+                if isinstance(child, tk.Label):
+                    child.config(bg=self.colors['bg_card'])
 
-                for hp in headphones:
-                    self.create_dark_headphone_card(cat_frame, hp, False)
+        card.bind("<Enter>", on_enter)
+        card.bind("<Leave>", on_leave)
 
-            # Restart button
-            nav_frame = tk.Frame(content_frame, bg=self.colors['bg_dark'])
-            nav_frame.pack(pady=40)
+        return card
 
-            restart_btn = self.create_gradient_button(nav_frame, "🔄 START OVER",
-                                                      self.restart, width=250)
-            restart_btn.pack()
+    def select_use_case(self, use_case):
+        """Handle use case selection"""
+        self.selected_use_case = use_case
+        print(f"Selected use case: {use_case}")
+        self.generate_recommendations()
 
-            canvas.pack(side="left", fill="both", expand=True)
-            scrollbar.pack(side="right", fill="y")
+    def generate_recommendations(self):
+        """Generate headphone recommendations"""
+        print("\n=== Generating Recommendations ===")
+        print(f"Genre: {self.selected_genre}")
+        print(f"Songs: {len(self.selected_songs)}")
+        print(f"Use Case: {self.selected_use_case}")
 
-        def create_dark_headphone_card(self, parent, headphone, highlight=False):
-            """Create dark themed headphone card"""
-            bg_color = self.colors['bg_card'] if not highlight else self.colors['bg_lighter']
+        # Calculate averages
+        avg_energy = sum([s.energy for s in self.selected_songs]) / len(self.selected_songs)
+        avg_bass = sum([s.loudness for s in self.selected_songs]) / len(self.selected_songs)
+        avg_tempo = sum([s.tempo for s in self.selected_songs]) / len(self.selected_songs)
 
-            card = tk.Frame(parent, bg=bg_color)
-            card.pack(fill="x", pady=10)
+        print(f"Avg Energy: {avg_energy:.2f}")
+        print(f"Avg Bass: {avg_bass:.2f}")
+        print(f"Avg Tempo: {avg_tempo:.0f}")
 
-            content = tk.Frame(card, bg=bg_color)
-            content.pack(padx=30, pady=25)
+        # Filter and score
+        matching_headphones = [hp for hp in self.headphones
+                               if hp.use_case.lower() == self.selected_use_case.lower()]
 
-            # Header
-            header = tk.Frame(content, bg=bg_color)
-            header.pack(fill="x", pady=(0, 15))
+        scored_headphones = []
+        for hp in matching_headphones:
+            score = 0
 
-            tk.Label(header, text=f"{headphone.brand} {headphone.model}",
-                     font=("Segoe UI", 16, "bold"), bg=bg_color,
-                     fg=self.colors['text_primary']).pack(side="left")
+            if avg_bass > -4 and hp.bass_level == "High":
+                score += 3
+            elif avg_bass < -7 and hp.bass_level == "Low":
+                score += 3
+            elif hp.bass_level == "Medium":
+                score += 2
 
-            tk.Label(header, text=f"${headphone.price:.0f}",
-                     font=("Segoe UI", 16, "bold"), bg=bg_color,
-                     fg=self.colors['success']).pack(side="right")
+            if avg_energy > 0.7 and hp.sound_profile == "Bass-heavy":
+                score += 2
+            elif avg_energy < 0.4 and hp.sound_profile == "Flat":
+                score += 2
+            else:
+                score += 1
 
-            # Rating
-            stars = "⭐" * int(headphone.user_rating)
-            tk.Label(content, text=f"{stars} {headphone.user_rating}/5.0 ({headphone.user_reviews:,} reviews)",
-                     font=("Segoe UI", 11), bg=bg_color,
-                     fg=self.colors['warning']).pack(anchor="w", pady=(0, 15))
+            score += hp.user_rating
+            scored_headphones.append((hp, score))
 
-            # Specs
-            specs_frame = tk.Frame(content, bg=bg_color)
-            specs_frame.pack(fill="x")
+        scored_headphones.sort(key=lambda x: x[1], reverse=True)
 
-            specs = [
-                ("TYPE", headphone.hp_type),
-                ("BASS", headphone.bass_level),
-                ("PROFILE", headphone.sound_profile),
-                ("ANC", "Yes" if headphone.noise_cancellation else "No")
-            ]
+        # Categorize
+        budget = [hp for hp, score in scored_headphones if hp.price < 150][:3]
+        premium = [hp for hp, score in scored_headphones if hp.price > 400][:3]
+        balanced = [hp for hp, score in scored_headphones if 150 <= hp.price <= 400][:3]
 
-            for label, value in specs:
-                spec = tk.Frame(specs_frame, bg=self.colors['bg_dark'])
-                spec.pack(side="left", padx=(0, 15))
+        recommendations = {
+            "Budget-Friendly": budget,
+            "Best of the Line": premium,
+            "Best of Both": balanced
+        }
 
-                tk.Label(spec, text=label, font=("Segoe UI", 9),
-                         bg=self.colors['bg_dark'], fg=self.colors['text_muted']).pack(padx=15, pady=(10, 2))
-                tk.Label(spec, text=value, font=("Segoe UI", 11, "bold"),
-                         bg=self.colors['bg_dark'], fg=self.colors['text_primary']).pack(padx=15, pady=(2, 10))
+        all_recommended = budget + premium + balanced
+        most_reviewed = max(all_recommended,
+                            key=lambda hp: hp.user_rating * hp.user_reviews) if all_recommended else None
 
-        def restart(self):
-            """Restart application"""
-            self.selected_genre = None
-            self.selected_songs = []
-            self.selected_use_case = None
-            self.filtered_songs = []
-            self.current_display_songs = []
-            self.show_welcome_screen()
+        self.show_recommendations(recommendations, most_reviewed)
+
+    def show_recommendations(self, recommendations, most_reviewed):
+        """Show recommendations - dark theme"""
+        self.clear_screen()
+
+        # Header
+        header_frame = tk.Frame(self.main_container, bg=self.colors['bg_card'])
+        header_frame.pack(fill="x")
+
+        header_inner = tk.Frame(header_frame, bg=self.colors['bg_card'])
+        header_inner.pack(pady=30)
+
+        tk.Label(header_inner, text="✨", font=("Segoe UI Emoji", 40),
+                 bg=self.colors['bg_card']).pack()
+        tk.Label(header_inner, text="Your Perfect Headphones",
+                 font=("Segoe UI", 32, "bold"), bg=self.colors['bg_card'],
+                 fg=self.colors['text_primary']).pack(pady=(10, 5))
+        tk.Label(header_inner, text=f"Based on {self.selected_genre} • {self.selected_use_case}",
+                 font=("Segoe UI", 13), bg=self.colors['bg_card'],
+                 fg=self.colors['text_secondary']).pack()
+
+        # Main content
+        main_frame = tk.Frame(self.main_container, bg=self.colors['bg_dark'])
+        main_frame.pack(fill="both", expand=True)
+
+        canvas = tk.Canvas(main_frame, bg=self.colors['bg_dark'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+        content_frame = tk.Frame(canvas, bg=self.colors['bg_dark'])
+
+        content_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=content_frame, anchor="nw", width=1160)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+        # Most reviewed
+        if most_reviewed:
+            featured_frame = tk.Frame(content_frame, bg=self.colors['bg_dark'])
+            featured_frame.pack(padx=40, pady=30)
+
+            tk.Label(featured_frame, text="⭐ MOST POSITIVELY REVIEWED",
+                     font=("Segoe UI", 14, "bold"), bg=self.colors['bg_dark'],
+                     fg=self.colors['warning']).pack(pady=(0, 15))
+
+            self.create_dark_headphone_card(featured_frame, most_reviewed, True)
+
+        # Categories
+        for category, headphones in recommendations.items():
+            if not headphones:
+                continue
+
+            cat_frame = tk.Frame(content_frame, bg=self.colors['bg_dark'])
+            cat_frame.pack(padx=40, pady=20, fill="x")
+
+            tk.Label(cat_frame, text=category.upper(),
+                     font=("Segoe UI", 14, "bold"), bg=self.colors['bg_dark'],
+                     fg=self.colors['primary_red']).pack(anchor="w", pady=(0, 15))
+
+            for hp in headphones:
+                self.create_dark_headphone_card(cat_frame, hp, False)
+
+        # Restart button
+        nav_frame = tk.Frame(content_frame, bg=self.colors['bg_dark'])
+        nav_frame.pack(pady=40)
+
+        restart_btn = self.create_gradient_button(nav_frame, "🔄 START OVER",
+                                                  self.restart, width=250)
+        restart_btn.pack()
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+    def create_dark_headphone_card(self, parent, headphone, highlight=False):
+        """Create dark themed headphone card"""
+        bg_color = self.colors['bg_card'] if not highlight else self.colors['bg_lighter']
+
+        card = tk.Frame(parent, bg=bg_color)
+        card.pack(fill="x", pady=10)
+
+        content = tk.Frame(card, bg=bg_color)
+        content.pack(padx=30, pady=25)
+
+        # Header
+        header = tk.Frame(content, bg=bg_color)
+        header.pack(fill="x", pady=(0, 15))
+
+        tk.Label(header, text=f"{headphone.brand} {headphone.model}",
+                 font=("Segoe UI", 16, "bold"), bg=bg_color,
+                 fg=self.colors['text_primary']).pack(side="left")
+
+        tk.Label(header, text=f"${headphone.price:.0f}",
+                 font=("Segoe UI", 16, "bold"), bg=bg_color,
+                 fg=self.colors['success']).pack(side="right")
+
+        # Rating
+        stars = "⭐" * int(headphone.user_rating)
+        tk.Label(content, text=f"{stars} {headphone.user_rating}/5.0 ({headphone.user_reviews:,} reviews)",
+                 font=("Segoe UI", 11), bg=bg_color,
+                 fg=self.colors['warning']).pack(anchor="w", pady=(0, 15))
+
+        # Specs
+        specs_frame = tk.Frame(content, bg=bg_color)
+        specs_frame.pack(fill="x")
+
+        specs = [
+            ("TYPE", headphone.hp_type),
+            ("BASS", headphone.bass_level),
+            ("PROFILE", headphone.sound_profile),
+            ("ANC", "Yes" if headphone.noise_cancellation else "No")
+        ]
+
+        for label, value in specs:
+            spec = tk.Frame(specs_frame, bg=self.colors['bg_dark'])
+            spec.pack(side="left", padx=(0, 15))
+
+            tk.Label(spec, text=label, font=("Segoe UI", 9),
+                     bg=self.colors['bg_dark'], fg=self.colors['text_muted']).pack(padx=15, pady=(10, 2))
+            tk.Label(spec, text=value, font=("Segoe UI", 11, "bold"),
+                     bg=self.colors['bg_dark'], fg=self.colors['text_primary']).pack(padx=15, pady=(2, 10))
+
+    def restart(self):
+        """Restart application"""
+        self.selected_genre = None
+        self.selected_songs = []
+        self.selected_use_case = None
+        self.filtered_songs = []
+        self.current_display_songs = []
+        self.show_welcome_screen()
 
 def main():
     root = tk.Tk()
     app = MusicMatchApp(root)
     root.mainloop()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
