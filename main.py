@@ -118,12 +118,43 @@ class MusicMatchModernApp:
 
         # Gradient effect simulation
         header_frame.create_rectangle(0, 0, 1100, 50, fill=self.colors['primary'], outline='')
-        header_frame.create_text(550, 25, text="🎧 Music Match AI",
+        header_frame.create_text(550, 25, text="Music Match Headphones",
                                 font=('Segoe UI', 16, 'bold'), fill='white')
 
-        # Main container with padding
-        main_container = tk.Frame(self.root, bg=self.colors['bg_main'])
-        main_container.pack(fill='both', expand=True, padx=12, pady=12)
+        # Scrollable main area
+        main_canvas = tk.Canvas(self.root, bg=self.colors['bg_main'], highlightthickness=0)
+        main_canvas.pack(fill="both", expand=True)
+
+        scrollbar = tk.Scrollbar(self.root, orient="vertical", command=main_canvas.yview)
+        scrollbar.pack(side="right", fill="y")
+        main_canvas.configure(yscrollcommand=scrollbar.set)
+
+        main_container = tk.Frame(main_canvas, bg=self.colors['bg_main'])
+        # keep a reference to the window item so we can resize it
+        _main_window_id = main_canvas.create_window((0, 0), window=main_container, anchor="nw")
+
+        def main_scroll(event):
+            main_canvas.configure(scrollregion=main_canvas.bbox("all"))
+            main_canvas.itemconfig(_main_window_id, width=event.width)
+
+        main_canvas.bind('<Configure>', main_scroll)
+
+        # Mouse wheel binding: cross-platform
+        def on_mousewheel(event):
+            if event.delta:
+                main_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            else:
+                # Linux (Button-4/Button-5 generate no delta but separate events)
+                # event.num will be 4 (up) or 5 (down)
+                if event.num == 4:
+                    main_canvas.yview_scroll(-1, "units")
+                elif event.num == 5:
+                    main_canvas.yview_scroll(1, "units")
+
+        # Bind both Windows/mac and Linux style events
+        main_canvas.bind_all("<MouseWheel>", on_mousewheel)  # Windows / macOS
+        main_canvas.bind_all("<Button-4>", on_mousewheel)  # X11 scroll up
+        main_canvas.bind_all("<Button-5>", on_mousewheel)  # X11 scroll down
 
         # Top section (Genre and Songs) - Card style
         top_frame = tk.Frame(main_container, bg=self.colors['bg_main'])
@@ -150,50 +181,61 @@ class MusicMatchModernApp:
         return card
 
     def build_genre_card(self, parent):
-        """Build genre selection card"""
+        """Build genre selection card (Button version)"""
         card = self.create_card(parent)
         card.pack(side='left', fill='both', padx=(0, 6), ipadx=8, ipady=8)
 
-        # Header
         header = tk.Frame(card, bg=self.colors['bg_card'])
         header.pack(fill='x', padx=12, pady=(12, 8))
 
-        tk.Label(header, text="Step 1.Select Genre",
-                font=('Segoe UI', 10, 'bold'),
-                bg=self.colors['bg_card'],
-                fg=self.colors['text_dark']).pack(anchor='w')
+        tk.Label(header, text="Step 1. Select Genre",
+                 font=('Segoe UI', 10, 'bold'),
+                 bg=self.colors['bg_card'],
+                 fg=self.colors['text_dark']).pack(anchor='w')
 
-        # Separator
         sep = tk.Frame(card, height=2, bg=self.colors['primary'])
         sep.pack(fill='x', padx=12, pady=(0, 8))
 
-        # Genre list with custom styling
-        list_frame = tk.Frame(card, bg=self.colors['bg_card'])
-        list_frame.pack(fill='both', expand=True, padx=12, pady=(0, 12))
+        # Scrollable Frame for many buttons
+        canvas = tk.Canvas(card, bg=self.colors['bg_card'], highlightthickness=0)
+        canvas.pack(fill='both', expand=True)
 
-        # Custom listbox with modern colors
-        self.genre_listbox = tk.Listbox(list_frame,
-                                       width=22, height=10,
-                                       font=('Segoe UI', 9),
-                                       bg=self.colors['bg_main'],
-                                       fg=self.colors['text_dark'],
-                                       selectbackground=self.colors['primary'],
-                                       selectforeground='white',
-                                       relief='flat',
-                                       borderwidth=0,
-                                       highlightthickness=1,
-                                       highlightbackground=self.colors['border'],
-                                       highlightcolor=self.colors['primary'])
-        self.genre_listbox.pack(side='left', fill='both', expand=True)
+        scrollbar = tk.Scrollbar(card, orient="vertical", command=canvas.yview)
+        scrollbar.pack(side="right", fill="y")
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-        scrollbar = tk.Scrollbar(list_frame, command=self.genre_listbox.yview)
-        scrollbar.pack(side='right', fill='y')
-        self.genre_listbox.config(yscrollcommand=scrollbar.set)
+        inner_frame = tk.Frame(canvas, bg=self.colors['bg_card'])
+        canvas.create_window((0, 0), window=inner_frame, anchor="nw")
 
-        for genre in self.unique_genres:
-            self.genre_listbox.insert(tk.END, f"  {genre.upper()} ({self.genre_counts[genre]:,})")
+        def on_frame_config(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
 
-        self.genre_listbox.bind('<<ListboxSelect>>', self.on_genre_select)
+        inner_frame.bind("<Configure>", on_frame_config)
+
+        # Create evenly distributed buttons
+        columns = 3
+        for i, genre in enumerate(self.unique_genres):
+            btn = tk.Button(inner_frame,
+                            text=genre.upper(),
+                            font=('Segoe UI', 9, 'bold'),
+                            bg=self.colors['primary'],
+                            fg='white',
+                            activebackground=self.colors['primary_dark'],
+                            relief='flat',
+                            cursor='hand2',
+                            padx=10, pady=8,
+                            command=lambda g=genre: self.on_genre_button_click(g))
+            row = i // columns
+            col = i % columns
+            btn.grid(row=row, column=col, padx=6, pady=6, sticky="nsew")
+
+        # make even sizing
+        for col in range(columns):
+            inner_frame.grid_columnconfigure(col, weight=1)
+
+    def on_genre_button_click(self, genre):
+        self.selected_genre = genre
+        self.load_genre_songs(genre)
 
     def build_song_card(self, parent):
         """Build song selection card"""
@@ -291,7 +333,7 @@ class MusicMatchModernApp:
         options_frame = tk.Frame(card, bg=self.colors['bg_card'])
         options_frame.pack(fill='x', padx=12, pady=(0, 12))
 
-        self.use_case_var = tk.StringVar()
+        self.use_case_var = tk.StringVar(value="NONE")
         use_cases = [
             ("🏋️ Workout", "Workout"),
             ("☕ Casual", "Casual"),
@@ -539,7 +581,7 @@ class MusicMatchModernApp:
 
         self.results_text.config(state='normal')
         self.results_text.delete('1.0', tk.END)
-        self.results_text.insert('1.0', "🤖 AI is analyzing your music preferences...\n\n"
+        self.results_text.insert('1.0', "🤖 Analyzing your music preferences...\n\n"
                                        "Please wait...")
         self.results_text.config(state='disabled')
 
@@ -623,18 +665,22 @@ class MusicMatchModernApp:
         self.analyze_btn.config(state='normal', text="🤖 Start Analysis")
 
     def format_headphone(self, hp):
-        """Format headphone information"""
         stars = "⭐" * int(hp.user_rating)
-        anc = "Yes" if hp.noise_cancellation else "No"
 
-        self.results_text.insert(tk.END, f"  {hp.brand} {hp.model}\n")
-        self.results_text.insert(tk.END, f"  Price: ${hp.price:.2f} | Rating: {stars} {hp.user_rating}/5.0 ({hp.user_reviews:,})\n")
-        self.results_text.insert(tk.END, f"  Type: {hp.hp_type} | Bass: {hp.bass_level} | Profile: {hp.sound_profile} | ANC: {anc}\n")
-        self.results_text.insert(tk.END, "-" * 95 + "\n")
+        block = (
+            f"🎧 {hp.brand} {hp.model}\n"
+            f"💰 Price: ${hp.price:.2f}\n"
+            f"⭐ Rating: {stars}  ({hp.user_rating}/5.0, {hp.user_reviews:,} reviews)\n"
+            f"🎵 Type: {hp.hp_type}\n"
+            f"🔊 Bass: {hp.bass_level} | Profile: {hp.sound_profile}\n"
+            f"🔇 ANC: {'Yes' if hp.noise_cancellation else 'No'}\n"
+            f"{'-' * 60}\n"
+        )
+
+        self.results_text.insert(tk.END, block)
 
     def clear_selections(self):
         """Clear selections"""
-        self.songs_listbox.selection_clear(0, tk.END)
         self.selected_songs = []
         self.use_case_var.set("")
         self.selected_use_case = None
@@ -649,7 +695,6 @@ class MusicMatchModernApp:
         self.selected_use_case = None
         self.filtered_songs = []
 
-        self.genre_listbox.selection_clear(0, tk.END)
         self.songs_listbox.delete(0, tk.END)
         self.use_case_var.set("")
         self.search_var.set("")
@@ -669,7 +714,6 @@ def main():
     root = tk.Tk()
     app = MusicMatchModernApp(root)
     root.mainloop()
-
 
 if __name__ == '__main__':
     main()
